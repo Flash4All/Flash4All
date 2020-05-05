@@ -1,9 +1,10 @@
 import axios from 'axios';
-import { TOKENS_RECEIVED } from '../types';
-
+import { TOKEN_TYPES } from '../types';
 const API=process.env.REACT_APP_API_ENDPOINT;
 
-const getTokens = () => {
+let { TOKENS_RECEIVED, TOKEN_ADDED } = TOKEN_TYPES;
+
+const fetchTokens = () => {
   return (dispatch) => {
     return axios.get(`${API}/tokens`)
       .then((response) => {
@@ -15,7 +16,19 @@ const getTokens = () => {
   };
 };
 
+const addToken = (token) => {
+  return (dispatch) => {
+    return axios.post(`${API}/tokens`, {token})
+      .then((response) => {
+        return dispatch({type: TOKEN_ADDED, payload: response.data});
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+};
 
 export default {
-  getTokens
+  fetchTokens,
+  addToken,
 };
