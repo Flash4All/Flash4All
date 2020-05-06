@@ -1,0 +1,7 @@
+export const TOKEN_TYPES = {
+  TOKENS_RECEIVED: 'TOKENS_RECEIVED',
+  TOKEN_ADDED: 'TOKEN_ADDED'
+}
+
+export const TRADING_PAIR_TYPES = {
+}
