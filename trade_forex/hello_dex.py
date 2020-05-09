@@ -1,27 +1,35 @@
 import requests
 from decimal import Decimal
-
+import json
+from redis_client import redis_client
 
 #things that happen only once
-dex_ag_token = requests.get('https://api-v2.dex.ag/token-list-full').json()
-paraswap_token_list = requests.get('https://paraswap.io/api/v1/tokens/').json()
-#1inch_token_list = no token list call
-([x['symbol'] for x in dex_ag_token])
+token_list = requests.get('https://flash4all.net/api/tokens').json()
+print(token_list)
 
+#1inch_token_list = no token list call
+#([x['symbol'] for x in token_list])
+
+with open('trade_ask.csv', 'w') as json_file:
+    pass
+with open('trade_bid.csv', 'w') as json_file:
+    pass
 
 def find_bid_ask(token, token2):
-    print(token, token2)
-    bid_price1 = requests.get(f'https://api-v2.dex.ag/price?from={token2}&to={token}&fromAmount=1&dex=ag').json()
-    ask_price1 = requests.get(f'https://api-v2.dex.ag/price?from={token}&to={token2}&fromAmount=1&dex=ag').json()
-    ask_float = Decimal(ask_price1['price'].replace(',', '.'))
-    bid_float = Decimal(bid_price1['price'].replace(',', '.'))
-    print(f'BID PRICE {bid_float}, - ASK PRICE {ask_float}')
+    try:
+        bid_price1 = requests.get(f'https://api-v2.dex.ag/price?from={token2}&to={token}&fromAmount=1&dex=ag').json()
+        ask_price1 = requests.get(f'https://api-v2.dex.ag/price?from={token}&to={token2}&fromAmount=1&dex=ag').json()
+        ask_float = Decimal(ask_price1['price'])
+        bid_float = 1/Decimal(bid_price1['price'])
+        redis_client.set(f'{token},{token2}',f'{bid_float},{ask_float}')
+    except Exception as e:
+        print(e)
+for token in token_list:
+    [find_bid_ask(token, token2) for token2 in token_list if token != token2]
 
-for token in dex_ag_token:
-    [find_bid_ask(token['symbol'], token2['symbol']) for token2 in dex_ag_token if token['symbol'] != token2['symbol']]
-    ask_1 = Decimal(ask_price1['price'].replace(',', '.'))
 
-#change price from string to decimal/float
+print(redis_client.get('DAI,ETH'))
+
 
 
 
@@ -29,6 +37,8 @@ for token in dex_ag_token:
 
 
 """
+new goal define what is in the CSV FILE/DATABASE 
+then grab it in the triangle trade algo 
 logic for getting prices of everything
 1.) get price for all the pairs (ask and bid) 
 2.) create a triangle with aave collateral types 

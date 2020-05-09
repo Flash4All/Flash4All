@@ -22,7 +22,7 @@ app.register_blueprint(trading_pair_routes, url_prefix='/api/pairs')
 @app.route('/')
 def index():
     redis = redis_client
-    value = redis.set('fff', 2, 5)
-    value = redis.get('fff')
+    value = redis.set('eth-usd', 2, 5)
+    value = redis.get('eth-usd')
     print(value)
     return jsonify(success=value.decode())
