@@ -2,11 +2,23 @@ import axios from 'axios';
 import { TOKEN_TYPES } from '../types';
 const API=process.env.REACT_APP_API_ENDPOINT;
 
-let { TOKENS_RECEIVED, TOKEN_ADDED } = TOKEN_TYPES;
+let { TOKENS_RECEIVED, TOKEN_ADDED, ARBITRAGE_RECEIVED } = TOKEN_TYPES;
+
+const arbitrage = (token) => {
+  return (dispatch) => {
+    return axios.post(`${API}/arbitrage`, { token })
+      .then((response) => {
+        return dispatch({type: ARBITRAGE_RECEIVED, payload: response.data});
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+};
 
 const fetchTokens = () => {
   return (dispatch) => {
-    return axios.get(`${API}/tokens`)
+    return axios.get(`https://flash4all.net/api/tokens`)
       .then((response) => {
         return dispatch({type: TOKENS_RECEIVED, payload: response.data});
       })
@@ -31,4 +43,5 @@ const addToken = (token) => {
 export default {
   fetchTokens,
   addToken,
+  arbitrage,
 };

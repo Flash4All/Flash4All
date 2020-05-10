@@ -24,7 +24,7 @@ app.register_blueprint(arbitrage_routes, url_prefix='/api/arbitrage')
 @app.route('/')
 def index():
     redis = redis_client
-    value = redis.set('fff', 2, 5)
-    value = redis.get('fff')
+    value = redis.set('eth-usd', 2, 5)
+    value = redis.get('eth-usd')
     print(value)
     return jsonify(success=value.decode())
