@@ -1,7 +1,5 @@
 import requests
 from decimal import Decimal
-import triange_forward_and_reversal.py
-
 
 token_list = requests.get('https://api-v2.dex.ag/token-list-full').json()
 token = input('What is your base collateral ').upper().strip()

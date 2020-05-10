@@ -7,6 +7,7 @@ import settings
 
 ## ROUTES
 from trading_pairs import trading_pair_routes
+from arbitrage import arbitrage_routes
 from tokens import token_routes
 
 ## Create Application
@@ -18,6 +19,7 @@ CORS(app)
 ## Register subroutes
 app.register_blueprint(token_routes, url_prefix='/api/tokens')
 app.register_blueprint(trading_pair_routes, url_prefix='/api/pairs')
+app.register_blueprint(arbitrage_routes, url_prefix='/api/arbitrage')
 
 @app.route('/')
 def index():
