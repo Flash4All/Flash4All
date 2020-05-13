@@ -12,7 +12,7 @@ addresses = {
 def get_all_tokens():
     if request.method == 'GET':
         tokens = [x.decode() for x in redis_client.lrange('tokens',0, -1)]
-        return jsonify(tokens=[{'token': t, 'address': addresses.get(t, None)} for t in tokens])
+        return jsonify(tokens)
     else:
         data = request.get_json()
         token = data.get('token', None)
@@ -27,6 +27,11 @@ def get_all_tokens():
             return jsonify(success=1)
         else:
             return jsonify(success=0, error='token already submitted'), 201
+
+@token_routes.route('/<token>', methods=["GET"])
+def get_token_detail(token):
+    if request.method == 'GET':
+        return jsonify(address=addresses[token.upper()])
 
 @token_routes.route('', methods=["POST"])
 def remove_token(token):
