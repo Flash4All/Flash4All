@@ -1,4 +1,5 @@
 import requests
+
 from decimal import Decimal
 from redis_client import redis_client
 
