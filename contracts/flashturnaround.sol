@@ -24,8 +24,15 @@ interface IUniswapV2Router01 { //Uniswap V2 on Ropsten 0xf164fC0Ec4E93095b804a47
     function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts);
 }
 
+import 'https://github.com/aave/flashloan-box/blob/master/contracts/aave/ILendingPoolAddressesProvider.sol';
+import 'https://github.com/aave/flashloan-box/blob/master/contracts/aave/ILendingPool.sol';
+import 'https://github.com/aave/flashloan-box/blob/master/contracts/aave/FlashLoanReceiverBase.sol';
 
-contract flashTurnaround {
+//import 'https://github.com/aave/aave-protocol/blob/master/contracts/configuration/LendingPoolAddressesProvider.sol';
+//import 'https://github.com/aave/aave-protocol/blob/master/contracts/lendingpool/LendingPool.sol';
+//import 'https://github.com/aave/aave-protocol/blob/master/contracts/flashloan/base/FlashLoanReceiverBase.sol';
+
+contract flashTurnaround is FlashLoanReceiverBase {
 
     constructor () public payable {}
 
@@ -39,9 +46,9 @@ contract flashTurnaround {
         
         // requestedAmount : Wanted amount to perform the trade. If requestedAmount is higher, than a flashloan will fill the gap
         // tbd
-        requestedAmount=injectedAmount;
-        
+        if(requestedAmount>injectedAmount) getAaveFlashLoan(tokenPath[0], requestedAmount - injectedAmount);
         uint amount=requestedAmount;
+        
         
         // Exchange Tokens along the tokenPath
         for (uint i=0; i<tokenPath.length-1; i++) {
@@ -54,6 +61,27 @@ contract flashTurnaround {
        
     }
 
+    function getAaveFlashLoan(address token, uint amount) external {
+        ILendingPool lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        lendingPool.flashLoan(address(this), token, amount, '');
+        //address aaveLPAddressesProvider=0x1c8756FD2B28e9426CDBDcC7E3c4d64fa9A54728;
+        //LendingPoolAddressesProvider loanProvider = LendingPoolAddressesProvider(aaveLPAddressesProvider);
+        // dai address
+        //LendingPool lendingPool = LendingPool(loanProvider.getLendingPool());
+        //receive
+        //lendingPool.flashLoan(address(this), token address, amount, '');
+    }
+    
+    // Receiver for flashLoan
+    function executeOperation(address _reserve, uint256 _amount, uint256 _fee, bytes calldata _params) external {
+        require(_amount <= getBalanceInternal(address(this), _reserve), "Invalid balance, was the flashLoan successful?");
+        
+        // USE IT
+        
+        uint totalDebt = _amount.add(_fee);
+        transferFundsBackToPoolInternal(_reserve, totalDebt);
+    }
+
     function kyberSwap(ERC20 fromToken, ERC20 targetToken, uint amount) private returns (uint exchangedAmount) {
         address kyberSC=0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
         SimpleNetworkInterface k = SimpleNetworkInterface(kyberSC);
@@ -61,10 +89,12 @@ contract flashTurnaround {
         return k.swapTokenToToken(fromToken, amount, targetToken, 0);
     }
     
-    function uniswapV2() {
-        address uniswapSC="0xf164fC0Ec4E93095b804a4795bBe1e041497b92a";
-        
-    }
+    //function uniswapV2(ERC20 fromToken, ERC20 targetToken, uint amount) private returns (uint exchangedAmount) {
+    //    address uniswapSC=0xf164fC0Ec4E93095b804a4795bBe1e041497b92a;
+    //    IUniswapV2Router01 u = IUniswapV2Router01(uniswapSC);
+    //    fromToken.approve(uniswapSC, amount);
+    //    return u.swapExactTokensForTokens(amount,0,[address(this),address(this),address(this)],address(this),0)[1];
+    //}
     function hashi(string memory text) private pure returns (bytes32 hash) {
         return keccak256(abi.encodePacked(text));
     }
@@ -75,10 +105,10 @@ contract flashTurnaround {
 
     function getBalance() public pure returns (uint256) { //view
         return 823;
-        //address(this).balance; just for verification
+        //address(this).balance;
     }
 
-    //function withdraw() public {
-    //    msg.sender.transfer(address(this).balance);
-    //}
+    function withdraw() public {
+        msg.sender.transfer(address(this).balance);
+    }
 }
