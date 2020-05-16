@@ -50,13 +50,13 @@ contract flashTurnaround is FlashLoanReceiverBase {
         uint amount=requestedAmount;
         
         
-        // Exchange Tokens along the tokenPath
-        for (uint i=0; i<tokenPath.length-1; i++) {
-            ERC20 fromToken=ERC20(tokenPath[i]);
-            targetToken=ERC20(tokenPath[i+1]);
-            if (hashi(exchangePath[i])==hashi("kyberswap")) amount = kyberSwap(fromToken, targetToken, amount);
-        }
 
+        bytes memory params = abi.encode(tokenPath, exchangePath, injectedAmount, requestedAmouunt);
+        ILendingPool lendingPool = ILendingPool(addressesProvider.getLendingPool());
+        lendingPool.flashLoan(address(this), baseToken, amount, params);
+
+
+        // Exchange Tokens along the tokenPath
         targetToken.transfer(msg.sender, amount);
        
     }
@@ -74,10 +74,15 @@ contract flashTurnaround is FlashLoanReceiverBase {
     
     // Receiver for flashLoan
     function executeOperation(address _reserve, uint256 _amount, uint256 _fee, bytes calldata _params) external {
+        (_tokenPath, _exchangePath, _injectedAmount _requestedAmount) = abi.decode(data, (address[], string[], uint128, uint128));
         require(_amount <= getBalanceInternal(address(this), _reserve), "Invalid balance, was the flashLoan successful?");
         
-        // USE IT
-        
+        for (uint i=0; i<tokenPath.length-1; i++) {
+            ERC20 fromToken=ERC20(tokenPath[i]);
+            targetToken=ERC20(tokenPath[i+1]);
+            if (hashi(exchangePath[i])==hashi("kyberswap")) amount = kyberSwap(fromToken, targetToken, amount);
+        }
+
         uint totalDebt = _amount.add(_fee);
         transferFundsBackToPoolInternal(_reserve, totalDebt);
     }
