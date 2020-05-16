@@ -3,7 +3,7 @@ import requests
 from decimal import Decimal
 from redis_client import redis_client
 
-token1 = 'MKR'
+token1 = 'BAT'
 token_list = [t for t in requests.get('https://flash4all.net/api/tokens').json() if t != "REP"]
 #token1 = input('What is your base collateral ').upper().strip()
 print(f'Flashing {token1}')
@@ -16,7 +16,6 @@ print(f'Flashing {token1}')
 def calculate_forward(market, token1, token2, token3):
     try:
         market='kyber'
-        print('')
         trade_1 = redis_client.get(f'{market},{token1},{token2}').decode().split(',')
         trade_2 = redis_client.get(f'{market},{token3},{token2}').decode().split(',')
         trade_3 = redis_client.get(f'{market},{token1},{token3}').decode().split(',')
@@ -25,9 +24,19 @@ def calculate_forward(market, token1, token2, token3):
         return (f'{token1},{token2},{token3}',forward_calculation_percent)
     except Exception as e:
         print(token1, token2, token3)
+def calculate_reversal(market, token1, token2, token3):
+    try:
+        market='kyber'
+        trade_1 = redis_client.get(f'{market},{token1},{token2}').decode().split(',')
+        trade_2 = redis_client.get(f'{market},{token3},{token2}').decode().split(',')
+        trade_3 = redis_client.get(f'{market},{token1},{token3}').decode().split(',')
+        reversal_calculation = (1/(Decimal(trade_1[1])) * (Decimal(trade_2[0])) * (Decimal(trade_3[0])))-1
+        reversal_calculation_percent = reversal_calculation * 100
+        return (f'{token1},{token2},{token3}',reversal_calculation_percent)
+    except Exception as e:
+        print(token1, token2, token3)
 
 def get_tuple_calcutions(item):
-    print(item)
     return item[1]
 
 arbitriage_opps = []
@@ -37,8 +46,9 @@ for token2 in token_list:
         for token3 in token_list:
             if token3 != token1 and token3 != token2:
                 arbitriage_opps.append(calculate_forward(None, token1, token2, token3))
+                arbitriage_opps.append(calculate_reversal(None, token1, token2, token3))
 
-print(arbitriage_opps)
+
 arbitriage_opps.sort(reverse=True, key = get_tuple_calcutions)
 print(arbitriage_opps[:3])
 
