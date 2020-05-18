@@ -50,13 +50,13 @@ def find_uniswap_bid_ask(token, token2):
         uniswap_sell_side = requests.get(
         f'https://api-v2.dex.ag/price?from={token}&to={token2}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
         uniswap_buy_side = requests.get(
-        f'https://api-v2.dex.ag/price?from={token2}&to={token_1}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
+        f'https://api-v2.dex.ag/price?from={token2}&to={token}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
         if uniswap_buy_side['error'] == True or uniswap_sell_side['error'] == True:
             raise
         uniswap_bid_float = uniswap_sell_side['price']
         uniswap_ask_float = uniswap_buy_side['price']
         print(f'{token}->{token_2}: Buy {uniswap_ask_float}, Sell {uniswap_bid_float}')
-        redis_client.set(f'uniswap, {token}, {token_2}', f'{uniswap_bid_float}, {uniswap_ask_float}')
+        redis_client.set(f'uniswap, {token}, {token2}', f'{uniswap_bid_float}, {uniswap_ask_float}')
     except Exception as e:
         print(e)
 
