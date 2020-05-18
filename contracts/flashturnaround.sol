@@ -23,68 +23,66 @@ interface IUniswapV2Router01 { //Uniswap V2 on Ropsten 0xf164fC0Ec4E93095b804a47
     function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts);
     function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts);
 }
+interface aaveLinks {
+    function getLendingPool() external view returns (address); // ILendingPoolAddressesProvider
+    function getLendingPoolCore() external view returns (address payable); // ILendingPoolAddressesProvider
+    function addressesProvider () external view returns ( address ); // ILendingPool
+    function flashLoan(address _receiver, address _reserve, uint256 _amount, bytes calldata _params) external; // ILendingPool
+}
 
-import 'https://github.com/aave/flashloan-box/blob/master/contracts/aave/ILendingPoolAddressesProvider.sol';
-import 'https://github.com/aave/flashloan-box/blob/master/contracts/aave/ILendingPool.sol';
-import 'https://github.com/aave/flashloan-box/blob/master/contracts/aave/FlashLoanReceiverBase.sol';
+contract flashTurnaround {
 
-//import 'https://github.com/aave/aave-protocol/blob/master/contracts/configuration/LendingPoolAddressesProvider.sol';
-//import 'https://github.com/aave/aave-protocol/blob/master/contracts/lendingpool/LendingPool.sol';
-//import 'https://github.com/aave/aave-protocol/blob/master/contracts/flashloan/base/FlashLoanReceiverBase.sol';
-
-contract flashTurnaround is FlashLoanReceiverBase {
+    address ETH=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address aaveAddr=0x1c8756FD2B28e9426CDBDcC7E3c4d64fa9A54728; // get addresses from Aave Addresses Provider
 
     constructor () public payable {}
 
-    function turnaround(address[] memory tokenPath, string[] memory exchangePath, uint128 injectedAmount, uint128 requestedAmount) public {
+    function turnaround(address[] memory tokenPath, string[] memory exchangePath, uint injectedAmount, uint tradeAmount) public {
+        require(tradeAmount>0 && tradeAmount>=injectedAmount); // amounts should be >0
+        require(tokenPath[0]==tokenPath[tokenPath.length]); // first and last token must be the same
         ERC20 baseToken=ERC20(tokenPath[0]);
-        ERC20 targetToken; // changes along the tokenPath
 
-        // injectedAmount : Amount to be sent to the smart contract for exchange
-        if (injectedAmount>0) baseToken.transferFrom(msg.sender, address(this), injectedAmount);
-        baseToken.approve(address(this), injectedAmount);
-        
-        // requestedAmount : Wanted amount to perform the trade. If requestedAmount is higher, than a flashloan will fill the gap
-        // tbd
-        if(requestedAmount>injectedAmount) getAaveFlashLoan(tokenPath[0], requestedAmount - injectedAmount);
-        uint amount=requestedAmount;
-        
-        
+        // injectedAmount : Amount to be sent to the smart contract to perform trades
+        if(injectedAmount>0) baseToken.transferFrom(msg.sender, address(this), injectedAmount);
+        if(tokenPath[0]!=ETH) baseToken.approve(address(this), tradeAmount);
 
-        bytes memory params = abi.encode(tokenPath, exchangePath, injectedAmount, requestedAmouunt);
-        ILendingPool lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        lendingPool.flashLoan(address(this), baseToken, amount, params);
+        // Encode input parameters
+        bytes memory params = abi.encode(tokenPath, exchangePath, injectedAmount, tradeAmount);
 
-
-        // Exchange Tokens along the tokenPath
-        targetToken.transfer(msg.sender, amount);
-       
+        // tradeAmount : Wanted amount to perform the trade.
+        if(tradeAmount>injectedAmount) // If tradeAmount is higher, than a flashloan will fill the gap
+            aaveLinks(aaveLinks(aaveAddr).getLendingPool()).flashLoan(address(this), tokenPath[0], tradeAmount - injectedAmount, params);
+        else
+            performSwaps(params, 0);
     }
 
-    function getAaveFlashLoan(address token, uint amount) external {
-        ILendingPool lendingPool = ILendingPool(addressesProvider.getLendingPool());
-        lendingPool.flashLoan(address(this), token, amount, '');
-        //address aaveLPAddressesProvider=0x1c8756FD2B28e9426CDBDcC7E3c4d64fa9A54728;
-        //LendingPoolAddressesProvider loanProvider = LendingPoolAddressesProvider(aaveLPAddressesProvider);
-        // dai address
-        //LendingPool lendingPool = LendingPool(loanProvider.getLendingPool());
-        //receive
-        //lendingPool.flashLoan(address(this), token address, amount, '');
-    }
-    
-    // Receiver for flashLoan
+    // Receiver for Aave flash loan
     function executeOperation(address _reserve, uint256 _amount, uint256 _fee, bytes calldata _params) external {
-        (_tokenPath, _exchangePath, _injectedAmount _requestedAmount) = abi.decode(data, (address[], string[], uint128, uint128));
-        require(_amount <= getBalanceInternal(address(this), _reserve), "Invalid balance, was the flashLoan successful?");
-        
+        performSwaps(_params, _fee);
+
+        // Return flash loan
+        address corePool = aaveLinks(aaveAddr).getLendingPoolCore();
+        if(_reserve!=ETH)
+            ERC20(_reserve).transfer(corePool, _amount + _fee);
+        else
+            payable(corePool).transfer(_amount + _fee);
+    }
+
+    function performSwaps(bytes memory params, uint fee) private {
+        address[] memory tokenPath; string[] memory exchangePath; uint injectedAmount; uint tradeAmount;
+        (tokenPath, exchangePath, injectedAmount, tradeAmount) = abi.decode(params, (address[], string[], uint, uint));
+
+        ERC20 targetToken; // changes along the tokenPath
         for (uint i=0; i<tokenPath.length-1; i++) {
             ERC20 fromToken=ERC20(tokenPath[i]);
             targetToken=ERC20(tokenPath[i+1]);
-            if (hashi(exchangePath[i])==hashi("kyberswap")) amount = kyberSwap(fromToken, targetToken, amount);
+            if (hashi(exchangePath[i])==hashi("kyberswap")) tradeAmount = kyberSwap(fromToken, targetToken, tradeAmount);
+            if (hashi(exchangePath[i])==hashi("uniswap")) tradeAmount = uniswapV2(fromToken, targetToken, tradeAmount);
         }
 
-        uint totalDebt = _amount.add(_fee);
-        transferFundsBackToPoolInternal(_reserve, totalDebt);
+        // Return remaining Tokens to sender
+        if(address(targetToken)!=ETH) targetToken.transfer(msg.sender, tradeAmount-fee);
+        else msg.sender.transfer(tradeAmount-fee);
     }
 
     function kyberSwap(ERC20 fromToken, ERC20 targetToken, uint amount) private returns (uint exchangedAmount) {
@@ -94,12 +92,13 @@ contract flashTurnaround is FlashLoanReceiverBase {
         return k.swapTokenToToken(fromToken, amount, targetToken, 0);
     }
     
-    //function uniswapV2(ERC20 fromToken, ERC20 targetToken, uint amount) private returns (uint exchangedAmount) {
+    function uniswapV2(ERC20 fromToken, ERC20 targetToken, uint amount) private returns (uint exchangedAmount) {
     //    address uniswapSC=0xf164fC0Ec4E93095b804a4795bBe1e041497b92a;
     //    IUniswapV2Router01 u = IUniswapV2Router01(uniswapSC);
     //    fromToken.approve(uniswapSC, amount);
     //    return u.swapExactTokensForTokens(amount,0,[address(this),address(this),address(this)],address(this),0)[1];
-    //}
+    }
+
     function hashi(string memory text) private pure returns (bytes32 hash) {
         return keccak256(abi.encodePacked(text));
     }
