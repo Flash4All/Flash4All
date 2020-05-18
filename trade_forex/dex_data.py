@@ -2,14 +2,7 @@ import requests
 from decimal import Decimal
 import json
 from redis_client import redis_client
-dex_ = 'uniswap'
-srcToken = 'DAI'
-destToken = 'ETH'
-initial_amount = input('How much we flashing')
-uniswap_make_shift = requests.get(f'https://api-v2.dex.ag/price?from={srcToken}&to={destToken}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
-print(uniswap_make_shift)
 
-"""
 #market_prices = requests.get(f'https://api.kyber.network/market')
 addresses = {
             'MKR': '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2',
@@ -41,16 +34,31 @@ input_flash_collateral = 'MKR'
 trade_path = 'USDT'
 trade_path_2 = 'ETH'
 #trade_path = input('Enter potential path')
+([x for x in token_list])
 
-def find_uniswap_bid_ask(token_2):
-    token_quote = uniswap_addresses[token_2]
-    token_base_ETH = 'ETH'
+
+#buying = ask price
+#selling = bid price
+def find_uniswap_bid_ask(token, token2):
+    dex_ = 'uniswap'
+    initial_amount = 10
+    token = token_list
+    token2 = token_list
     try:
-        ask_bid_eth_only = requests.get(f'https://api.uniswap.info/v1/orderbook/{token_quote}').json()
-        print(ask_bid_eth_only)
-    except Exception as p:
-        print(p)
-
+    #bid price = sell price
+    # buy side = ask price should be lower
+        uniswap_sell_side = requests.get(
+        f'https://api-v2.dex.ag/price?from={token}&to={token2}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
+        uniswap_buy_side = requests.get(
+        f'https://api-v2.dex.ag/price?from={token2}&to={token_1}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
+        if uniswap_buy_side['error'] == True or uniswap_sell_side['error'] == True:
+            raise
+        uniswap_bid_float = uniswap_sell_side['price']
+        uniswap_ask_float = uniswap_buy_side['price']
+        print(f'{token}->{token_2}: Buy {uniswap_ask_float}, Sell {uniswap_bid_float}')
+        redis_client.set(f'uniswap, {token}, {token_2}', f'{uniswap_bid_float}, {uniswap_ask_float}')
+    except Exception as e:
+        print(e)
 
 def find_kyber_bid_ask(token, token2):
     token_1_address = addresses[token]
@@ -69,10 +77,10 @@ def find_kyber_bid_ask(token, token2):
 
 for token in token_list:
     [find_kyber_bid_ask(token, token2) for token2 in token_list if token != token2]
-    [find_uniswap_bid_ask(token2) for token2 in token_list]
+    [find_uniswap_bid_ask(token2) for token2 in token_list if token != token2]
 
 
-"""
+
 
 
 
