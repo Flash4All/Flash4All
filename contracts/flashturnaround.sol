@@ -35,24 +35,29 @@ contract flashTurnaround {
     address ETH=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address aaveAddr=0x1c8756FD2B28e9426CDBDcC7E3c4d64fa9A54728; // get addresses from Aave Addresses Provider
 
+    fallback() external payable {}
+    receive() external payable {}
+
     constructor () public payable {}
 
-    function turnaround(address[] memory tokenPath, string[] memory exchangePath, uint injectedAmount, uint tradeAmount) public {
+    function turnaround(address[] memory tokenPath, string[] memory exchangePath, uint injectedAmount, uint tradeAmount) public payable {
         require(tradeAmount>0 && tradeAmount>=injectedAmount); // amounts should be >0
-        require(tokenPath[0]==tokenPath[tokenPath.length]); // first and last token must be the same
         ERC20 baseToken=ERC20(tokenPath[0]);
 
         // injectedAmount : Amount to be sent to the smart contract to perform trades
-        if(injectedAmount>0) baseToken.transferFrom(msg.sender, address(this), injectedAmount);
-        if(tokenPath[0]!=ETH) baseToken.approve(address(this), tradeAmount);
+        if(tokenPath[0]!=ETH) {
+            if(injectedAmount>0) baseToken.transferFrom(msg.sender, address(this), injectedAmount);
+            baseToken.approve(address(this), tradeAmount);
+        }
 
         // Encode input parameters
         bytes memory params = abi.encode(tokenPath, exchangePath, injectedAmount, tradeAmount);
 
-        // tradeAmount : Wanted amount to perform the trade.
-        if(tradeAmount>injectedAmount) // If tradeAmount is higher, than a flashloan will fill the gap
+        // tradeAmount : Wanted amount to perform the trade. 0x9E5C7835E4b13368fd628196C4f1c6cEc89673Fa
+        if(tradeAmount>injectedAmount) { // If tradeAmount is higher, than a flashloan will fill the gap
+            require(tokenPath[0]==tokenPath[tokenPath.length-1]); // but for this first and last token must be the same
             aaveLinks(aaveLinks(aaveAddr).getLendingPool()).flashLoan(address(this), tokenPath[0], tradeAmount - injectedAmount, params);
-        else
+        } else
             performSwaps(params, 0);
     }
 
@@ -61,7 +66,7 @@ contract flashTurnaround {
         performSwaps(_params, _fee);
 
         // Return flash loan
-        address corePool = aaveLinks(aaveAddr).getLendingPoolCore();
+        address corePool = aaveLinks(aaveAddr).getLendingPoolCore(); //0x4295Ee704716950A4dE7438086d6f0FBC0BA9472
         if(_reserve!=ETH)
             ERC20(_reserve).transfer(corePool, _amount + _fee);
         else
@@ -72,26 +77,31 @@ contract flashTurnaround {
         address[] memory tokenPath; string[] memory exchangePath; uint injectedAmount; uint tradeAmount;
         (tokenPath, exchangePath, injectedAmount, tradeAmount) = abi.decode(params, (address[], string[], uint, uint));
 
-        ERC20 targetToken; // changes along the tokenPath
+        address targetAddr=tokenPath[0]; // changes along the tokenPath
         for (uint i=0; i<tokenPath.length-1; i++) {
-            ERC20 fromToken=ERC20(tokenPath[i]);
-            targetToken=ERC20(tokenPath[i+1]);
-            if (hashi(exchangePath[i])==hashi("kyberswap")) tradeAmount = kyberSwap(fromToken, targetToken, tradeAmount);
-            if (hashi(exchangePath[i])==hashi("uniswap")) tradeAmount = uniswapV2(fromToken, targetToken, tradeAmount);
+            address fromAddr=tokenPath[i]; targetAddr=tokenPath[i+1];
+            if (hashi(exchangePath[i])==hashi("kyberswap")) tradeAmount = kyberSwap(fromAddr, targetAddr, tradeAmount);
+            //if (hashi(exchangePath[i])==hashi("uniswap")) tradeAmount = uniswapV2(fromAddr, targetAddr, tradeAmount);
         }
 
         // Return remaining Tokens to sender
-        if(address(targetToken)!=ETH) targetToken.transfer(msg.sender, tradeAmount-fee);
+        if(targetAddr!=ETH) ERC20(targetAddr).transfer(msg.sender, tradeAmount-fee);
         else msg.sender.transfer(tradeAmount-fee);
     }
 
-    function kyberSwap(ERC20 fromToken, ERC20 targetToken, uint amount) private returns (uint exchangedAmount) {
+    function kyberSwap(address fromAddr, address targetAddr, uint amount) public payable returns (uint exchangedAmount) {
         address kyberSC=0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
         SimpleNetworkInterface k = SimpleNetworkInterface(kyberSC);
-        fromToken.approve(kyberSC, amount);
-        return k.swapTokenToToken(fromToken, amount, targetToken, 0);
+        if(fromAddr!=ETH) {
+            ERC20(fromAddr).approve(kyberSC, amount);
+            if(targetAddr!=ETH)
+                return k.swapTokenToToken(ERC20(fromAddr), amount, ERC20(targetAddr), 0);
+            else
+                return k.swapTokenToEther(ERC20(fromAddr), amount, 0);
+        } else
+            return k.swapEtherToToken{value:amount}(ERC20(targetAddr), 0);
     }
-    
+
     function uniswapV2(ERC20 fromToken, ERC20 targetToken, uint amount) private returns (uint exchangedAmount) {
     //    address uniswapSC=0xf164fC0Ec4E93095b804a4795bBe1e041497b92a;
     //    IUniswapV2Router01 u = IUniswapV2Router01(uniswapSC);
