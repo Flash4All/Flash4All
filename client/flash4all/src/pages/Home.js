@@ -37,29 +37,39 @@ class Home extends Component {
     
     window.ethereum.enable().then((accounts) => {
       console.log(accounts[0]);
-      var contractABI=[{"inputs":[],"stateMutability":"payable","type":"constructor"},{"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"giveMeEth","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address[]","name":"tokenPath","type":"address[]"},{"internalType":"string[]","name":"exchangePath","type":"string[]"},{"internalType":"uint128","name":"injectedAmount","type":"uint128"},{"internalType":"uint128","name":"requestedAmount","type":"uint128"}],"name":"turnaround","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"}];
-      var contractAddress="0x7c2Cad2f43E960203f5eACb424F520aCBF5d8cc4";
+      var contractABI=[{"inputs":[],"stateMutability":"payable","type":"constructor"},{"stateMutability":"payable","type":"fallback"},{"inputs":[{"internalType":"address","name":"_reserve","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"uint256","name":"_fee","type":"uint256"},{"internalType":"bytes","name":"_params","type":"bytes"}],"name":"executeOperation","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"giveMeEth","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"fromAddr","type":"address"},{"internalType":"address","name":"targetAddr","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"kyberSwap","outputs":[{"internalType":"uint256","name":"exchangedAmount","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address[]","name":"tokenPath","type":"address[]"},{"internalType":"string[]","name":"exchangePath","type":"string[]"},{"internalType":"uint256","name":"injectedAmount","type":"uint256"},{"internalType":"uint256","name":"tradeAmount","type":"uint256"}],"name":"turnaround","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
+      var contractAddress="0x7C57397Df4da76F91A5b1225F9Bee7a964f8AAe7";
       var web3 = new Web3(Web3.givenProvider);
+
+      // Various addresses for sample transaction on Ropsten testnet
       // DAI on Ropsten Oasis 0x31f42841c2db5173425b5223809cf3a38fede360
       // DAI on Ropsten Kyber 0xad6d458402f60fd3bd25163575031acdce07538d
+      // DAI on Ropsten AAve  0xf80a32a835f79d7787e8a8ee5721d0feafd78108 or 0xb5e5d0f8c0cba267cd3d7035d6adc8eba7df7cdd
       var DAI="0xad6d458402f60fd3bd25163575031acdce07538d";
       var KNC="0x7b2810576aa1cce68f2b118cef1f36467c648f92";
       var EOS="0xd5b4218b950a53ff07985e2d88346925c335eae7";
+      var WETH="0xc778417e063141139fce010982780140aa0cd5ab";
+      var ETH="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
       var tokenABI=[{"constant": false,"inputs": [{"name": "_spender", "type": "address"}, {"name": "_value","type": "uint256"}],"name": "approve","outputs": [{"name": "","type": "bool"}],"payable": false,"stateMutability": "nonpayable","type": "function"}];
-      var web3Infura = new Web3(Web3.givenProvider || "https://ropsten.infura.io/v3/");
+      var web3Infura = new Web3(Web3.givenProvider || "https://ropsten.infura.io/v3/"); // Infura-ID to be provided
       var tokenContract = new web3Infura.eth.Contract(tokenABI, DAI, {from: accounts[0]});
       
-      var smartContract = new web3Infura.eth.Contract(contractABI, contractAddress, {from: accounts[0], gas:21000000, gasPrice:200});
+      var smartContract = new web3Infura.eth.Contract(contractABI, contractAddress, {from: accounts[0], gas:21000000, gasPrice:2000000000});
       console.log(smartContract);
-      
-      tokenContract.methods
-        .approve(contractAddress, '100000000000000000000').send(() => smartContract.methods
-        .turnaround([DAI, KNC, EOS],["kyberswap","kyberswap"], '1000000000000000000','0').send({from:accounts[0],gasLimit:1700000}))
-  
-      
-      //Send eth to smart contract
-      //web3.eth.sendTransaction({from: '0xF9BeF45E5b554A6aA4202f576a5A501d58822006',to: contractAddress,data: web3.eth.abi.encodeFunctionSignature('giveMeEth()'),value: 10000000000000000});   
-      //myContract.methods.getBalance().call({from: accounts[0]},(e,r) => {console.log(r);});
+
+      // Exchange parameters - to be adjusted as required
+      var tokenPath=[DAI,EOS,ETH];
+      var exchangePath=["kyberswap","kyberswap"];
+      var initialAmount='800000000000000000'; // from the user's wallet
+      var totalAmount='800000000000000000'; // if totel amount is higher, flashloan will be used
+
+      if (tokenPath[0]!=ETH) {
+        tokenContract.methods
+          .approve(contractAddress,initialAmount).send(() => smartContract.methods
+          .turnaround(tokenPath,exchangePath,initialAmount,totalAmount).send({from:accounts[0],gasLimit:7700000}));
+      } else
+        smartContract.methods
+          .turnaround(tokenPath,exchangePath,initialAmount,totalAmount).send({from:accounts[0],gasLimit:7700000,value:initialAmount});
     });
   }
 
