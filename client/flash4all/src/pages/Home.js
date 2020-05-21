@@ -37,8 +37,8 @@ class Home extends Component {
     
     window.ethereum.enable().then((accounts) => {
       console.log(accounts[0]);
-      var contractABI=[{"inputs":[],"stateMutability":"payable","type":"constructor"},{"stateMutability":"payable","type":"fallback"},{"inputs":[{"internalType":"address","name":"_reserve","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"uint256","name":"_fee","type":"uint256"},{"internalType":"bytes","name":"_params","type":"bytes"}],"name":"executeOperation","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"giveMeEth","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"fromAddr","type":"address"},{"internalType":"address","name":"targetAddr","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"kyberSwap","outputs":[{"internalType":"uint256","name":"exchangedAmount","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address[]","name":"tokenPath","type":"address[]"},{"internalType":"string[]","name":"exchangePath","type":"string[]"},{"internalType":"uint256","name":"injectedAmount","type":"uint256"},{"internalType":"uint256","name":"tradeAmount","type":"uint256"}],"name":"turnaround","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
-      var contractAddress="0x7C57397Df4da76F91A5b1225F9Bee7a964f8AAe7";
+      var contractABI=[{"inputs":[],"stateMutability":"payable","type":"constructor"},{"stateMutability":"payable","type":"fallback"},{"inputs":[{"internalType":"address","name":"_reserve","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"uint256","name":"_fee","type":"uint256"},{"internalType":"bytes","name":"_params","type":"bytes"}],"name":"executeOperation","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"giveMeEth","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"fromAddr","type":"address"},{"internalType":"address","name":"targetAddr","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"kyberSwap","outputs":[{"internalType":"uint256","name":"exchangedAmount","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address[]","name":"tokenPath","type":"address[]"},{"internalType":"string[]","name":"exchangePath","type":"string[]"},{"internalType":"uint256","name":"injectedAmount","type":"uint256"},{"internalType":"uint256","name":"tradeAmount","type":"uint256"}],"name":"turnaround","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"fromAddr","type":"address"},{"internalType":"address","name":"targetAddr","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"uniswapv1","outputs":[{"internalType":"uint256","name":"exchangedAmount","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
+      var contractAddress="0x9c8039Db04e769c42C773e8843DF7103d120F7De";
       var web3 = new Web3(Web3.givenProvider);
 
       // Various addresses for sample transaction on Ropsten testnet
@@ -89,13 +89,71 @@ class Home extends Component {
      let { tokens, trades } = this.props.token;
      return (
      <section>
-        List of Tokens
-       {tokens.map((token) => (<div onClick={this.getArbitrage.bind(null, token)}> {token}</div>))}
+        <p>Available Flash-Mates (click to activate)</p>
+     <button style={workingPart}>DAI</button>
+       {tokens.map((token) => (<button onClick={this.getArbitrage.bind(null, token)}> {token}</button>))}
        <br/>
        <br/>
        <br/>
+       <center>
+       <table>
+<tbody>
+<tr>
+<td>
+  
+  </td>
+  </tr>
+</tbody>
+</table>
+<hr/>
+<table>
+<tbody>
+<tr>
+<td>Trading Opportunities</td>
+<td>Take It!</td>
+</tr>
+<tr>
+<td>2,1% DAI>MKR>ETH</td>
+<td>
+  <p>
+    <button type="button" >10$</button>
+    <button type="button" >50$</button>
+    <button type="button" >100$</button>
+    <button type="button" >200$</button>
+    <button type="button" >500$</button>  
+  </p>
+</td>
+</tr>
+<tr>
+<td>1.8% DAI>TRX>USDC</td>
+<td>
+  <p>
+    <button type="button" >10$</button>
+    <button type="button" >50$</button>
+    <button type="button" >100$</button>
+    <button type="button" >200$</button>
+    <button type="button" >500$</button>  
+  </p>
+</td>
+</tr>
+<tr>
+<td>0.4% DAI>LEND>ETH</td>
+<td>
+  <p>
+    <button type="button" >10$</button>
+    <button type="button" >50$</button>
+    <button type="button" >100$</button>
+    <button type="button" >200$</button>
+    <button type="button" >500$</button>  
+  </p>
+</td>
+</tr>
+</tbody>
+</table>
 
-       {trades.map((trade) => (<div> {JSON.stringify(trade)}</div>))}
+
+
+</center>
        <hr />
        <hr />
        <div class="input-group i-1">
