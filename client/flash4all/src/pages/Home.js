@@ -89,8 +89,8 @@ class Home extends Component {
      let { tokens, trades } = this.props.token;
      return (
      <section>
-        <p>Available Flash-Mates (click to activate)</p>
-     <button style={workingPart}>DAI</button>
+       <p>Available Flash-Mates (click to activate)</p>
+       <button style={workingPart}>DAI</button>
        {tokens.map((token) => (<button onClick={this.getArbitrage.bind(null, token)}> {token}</button>))}
        <br/>
        <br/>
@@ -109,78 +109,48 @@ class Home extends Component {
 <table>
 <tbody>
 <tr>
-<td>Trading Opportunities</td>
-<td>Take It!</td>
+<td><b>Trading Opportunities</b></td>
+<td><b>Choose your volume</b></td>
 </tr>
 <tr>
-<td>2,1% DAI>MKR>ETH</td>
+<td><gain>2.1% </gain> DAI > MKR > ETH</td>
 <td>
   <p>
-    <button type="button" >10$</button>
-    <button type="button" >50$</button>
-    <button type="button" >100$</button>
-    <button type="button" >200$</button>
-    <button type="button" >500$</button>  
+    0$<input type="range" value="90" onChange={(e) => this.setState({triArbKyberAmount: e.target.value})} />100$ <button type="button" onClick={this.triArbKyber}>Execute trade</button>
+    <table><tr>40 DAI from wallet</tr><tr>50 DAI in Flash Loan</tr></table>
   </p>
 </td>
 </tr>
 <tr>
-<td>1.8% DAI>TRX>USDC</td>
+<td><gain>1.8%</gain> DAI > TRX > USDC</td>
 <td>
   <p>
-    <button type="button" >10$</button>
-    <button type="button" >50$</button>
-    <button type="button" >100$</button>
-    <button type="button" >200$</button>
-    <button type="button" >500$</button>  
+  0$<input type="range" value="55" />100$ <button type="button" >Execute trade</button>  
+  <table><tr>40 DAI from wallet</tr><tr>15 DAI in Flash Loan</tr></table>
   </p>
 </td>
 </tr>
 <tr>
-<td>0.4% DAI>LEND>ETH</td>
+<td><gain>0.6</gain> DAI > LEND > ETH</td>
 <td>
   <p>
-    <button type="button" >10$</button>
-    <button type="button" >50$</button>
-    <button type="button" >100$</button>
-    <button type="button" >200$</button>
-    <button type="button" >500$</button>  
+  0$<input type="range" value="40" />100$ <button type="button" >Execute trade</button>
+  <table><tr>40 DAI from wallet</tr><tr>no Flash Loan</tr></table>
   </p>
 </td>
 </tr>
 </tbody>
 </table>
-
-
-
 </center>
        <hr />
        <hr />
        <div class="input-group i-1">
          <input type="text" onChange={(e) => this.setState({flashEthAmount: e.target.value})} class="form-control" id="input1" placeholder="Amount of ETH" />
-         <button onClick={this.flashEth} type="button" id="data_button1" class="btn btn-primary">Flash ETH</button>
-       </div>
-       <div class="input-group i-2">
-         <input type="text" class="form-control" id="input2" placeholder="Amount of DAI" />
-         <button type="button" id="data_button2" class="btn btn-primary">Flash DAI</button>
+         <button onClick={this.flashEth} type="button" id="data_button1" class="btn btn-primary">Log account address</button>
        </div>
        <div class="input-group i-3" style={workingPart}>
        <input type="text" onChange={(e) => this.setState({triArbKyberAmount: e.target.value})} class="form-control" id="input3" placeholder="Amount of DAI" />
          <button onClick={this.triArbKyber} type="button" id="data_button3" class="btn btn-primary">Flash DAI > KNC > EOS (via Kyber)</button>
-       </div>
-       <div class="input-group i-4">
-         <input type="text" class="form-control" id="input4" placeholder="Amount of DAI" />
-         <button type="button" id="data_button4" class="btn btn-primary">Flash DAI > KNC > ETH (via Uniswap v2 flash?)</button>
-       </div>
-       <div class="input-group i-5">
-         <input type="text" class="form-control" id="input5_1" placeholder="Amount of DAI" />
-         <input type="text" class="form-control" id="input5_2" placeholder="Flashloan amount in DAI" />
-         <button type="button" id="data_button5" class="btn btn-primary">Flash DAI > KNC > ETH (via Kyber)</button>
-       </div>
-
-       <div class="input-group i-6">
-         <input type="text" class="form-control" id="input6" placeholder="Amount of DAI" />
-         <button type="button" id="data_button5" class="btn btn-primary">Flash DAI > EOS > DAI (via predefined exchanges x,y)</button>
        </div>
      </section>
      )
