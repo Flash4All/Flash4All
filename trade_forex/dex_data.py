@@ -36,7 +36,6 @@ trade_path_2 = 'ETH'
 #trade_path = input('Enter potential path')
 ([x for x in token_list])
 
-
 #buying = ask price
 #selling = bid price
 def find_uniswap_bid_ask(token, token2):
@@ -55,7 +54,7 @@ def find_uniswap_bid_ask(token, token2):
             raise
         uniswap_bid_float = uniswap_sell_side['price']
         uniswap_ask_float = uniswap_buy_side['price']
-        print(f'{token}->{token_2}: Buy {uniswap_ask_float}, Sell {uniswap_bid_float}')
+        print(f'{token}->{token2}: Buy {uniswap_ask_float}, Sell {uniswap_bid_float}')
         redis_client.set(f'uniswap, {token}, {token2}', f'{uniswap_bid_float}, {uniswap_ask_float}')
     except Exception as e:
         print(e)
@@ -77,7 +76,7 @@ def find_kyber_bid_ask(token, token2):
 
 for token in token_list:
     [find_kyber_bid_ask(token, token2) for token2 in token_list if token != token2]
-    [find_uniswap_bid_ask(token2) for token2 in token_list if token != token2]
+    [find_uniswap_bid_ask(token, token2) for token2 in token_list if token != token2]
 
 
 
