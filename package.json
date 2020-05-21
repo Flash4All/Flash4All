@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@uniswap/sdk": "^2.0.5"
+  }
+}
