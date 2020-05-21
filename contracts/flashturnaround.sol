@@ -54,6 +54,18 @@ interface UniswapExchangeInterface {
     function tokenToExchangeSwapOutput(uint256 tokens_bought, uint256 max_tokens_sold, uint256 max_eth_sold, uint256 deadline, address exchange_addr) external returns (uint256  tokens_sold);
     function tokenToExchangeTransferOutput(uint256 tokens_bought, uint256 max_tokens_sold, uint256 max_eth_sold, uint256 deadline, address recipient, address exchange_addr) external returns (uint256  tokens_sold);
 }
+interface IUniswapV2Factory {
+  event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+
+  function getPair(address tokenA, address tokenB) external view returns (address pair);
+  function allPairs(uint) external view returns (address pair);
+  function allPairsLength() external view returns (uint);
+
+  function feeTo() external view returns (address);
+  function feeToSetter() external view returns (address);
+
+  function createPair(address tokenA, address tokenB) external returns (address pair);
+}
 interface IUniswapV2Router01 { //Uniswap V2 on Ropsten 0xf164fC0Ec4E93095b804a4795bBe1e041497b92a
     function swapExactTokensForTokens(uint amountIn,uint amountOutMin,address[] calldata path,address to,uint deadline) external returns (uint[] memory amounts);
     function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts);
@@ -69,6 +81,7 @@ interface aaveLinks {
 contract flashTurnaround {
 
     address ETH=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address WETH=0xc778417E063141139Fce010982780140Aa0cD5Ab;
     address aaveAddr=0x1c8756FD2B28e9426CDBDcC7E3c4d64fa9A54728; // get addresses from Aave Addresses Provider
 
     fallback() external payable {}
@@ -153,23 +166,26 @@ contract flashTurnaround {
             return trade.ethToTokenSwapInput{value:amount}(0, now+120); //min tokens = 0
     }
 
-    function uniswapV2(ERC20 fromToken, ERC20 targetToken, uint amount) private returns (uint exchangedAmount) {
-        address uniswapSC=0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f; // Factory address - same on Mainnet: 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
-        IUniswapV2Router01 u=IUniswapV2Router01(uniswapSC);
-        //if(fromAddr!=ETH) {
-        //   ERC20(fromAddr).approve(uniswapSC, amount);
-        //    if(targetAddr!=ETH)
-        //        return k.swapTokenToToken(ERC20(fromAddr), amount, ERC20(targetAddr), 0);
-        //    else
-        //        return k.swapTokenToEther(ERC20(fromAddr), amount, 0);
-        //} else
-        //    return u.swapExactETHForTokens(0, [targetAddr], address(this), now){value:amount}(ERC20(targetAddr), 0);
-
-        
-    //    IUniswapV2Router01 u = IUniswapV2Router01(uniswapSC);
-    //    fromToken.approve(uniswapSC, amount);
-    //    return u.swapExactTokensForTokens(amount,0,[address(this),address(this),address(this)],address(this),0)[1];
-        return 0;
+    function addr(address a1, address a2) private pure returns (address[] memory) {
+        address[] memory addressList;
+        addressList[0]=a1;
+        addressList[1]=a2;
+        return addressList;
+    }
+  
+    function uniswapv2(address fromAddr, address targetAddr, uint amount) public payable returns (uint exchangedAmount) {
+        //address uniswapSC=0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f; // Factory address - same on Mainnet: 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
+        //address uniPair=IUniswapV2Factory(uniswapSC).getPair(fromAddr, targetAddr);
+        address v2router=0xf164fC0Ec4E93095b804a4795bBe1e041497b92a;
+        IUniswapV2Router01 u=IUniswapV2Router01(v2router);
+        if(fromAddr!=ETH) {
+            ERC20(fromAddr).approve(v2router, amount);
+            if(targetAddr!=ETH)
+                return u.swapExactTokensForTokens(amount, 0, addr(fromAddr, targetAddr), address(this), now+120)[1];
+            else
+                return u.swapExactTokensForETH(amount, 0, addr(fromAddr, WETH), address(this), now+120)[1];
+        } else
+            return u.swapExactETHForTokens{value:amount}(0, addr(WETH, targetAddr), address(this), now+120)[1];
     }
 
     function hashi(string memory text) private pure returns (bytes32 hash) {
