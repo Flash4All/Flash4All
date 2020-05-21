@@ -1,4 +1,6 @@
 import requests
+import sys
+import os
 from decimal import Decimal
 import json
 from redis_client import redis_client
@@ -39,10 +41,11 @@ trade_path_2 = 'ETH'
 #buying = ask price
 #selling = bid price
 def find_uniswap_bid_ask(token, token2):
+    if token == 'SAI' or token2 == 'SAI' or token == 'USDT' or token2 == 'USDT':
+        return
+
     dex_ = 'uniswap'
     initial_amount = 10
-    token = token_list
-    token2 = token_list
     try:
     #bid price = sell price
     # buy side = ask price should be lower
@@ -50,14 +53,19 @@ def find_uniswap_bid_ask(token, token2):
         f'https://api-v2.dex.ag/price?from={token}&to={token2}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
         uniswap_buy_side = requests.get(
         f'https://api-v2.dex.ag/price?from={token2}&to={token}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
-        if uniswap_buy_side['error'] == True or uniswap_sell_side['error'] == True:
-            raise
-        uniswap_bid_float = uniswap_sell_side['price']
-        uniswap_ask_float = uniswap_buy_side['price']
+
+        uniswap_bid_float = uniswap_sell_side.get('price')
+
+        uniswap_ask_float = uniswap_buy_side.get('price')
         print(f'{token}->{token2}: Buy {uniswap_ask_float}, Sell {uniswap_bid_float}')
         redis_client.set(f'uniswap, {token}, {token2}', f'{uniswap_bid_float}, {uniswap_ask_float}')
     except Exception as e:
-        print(e)
+        print(token, token2)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return {'error': str(e)}
+
 
 def find_kyber_bid_ask(token, token2):
     token_1_address = addresses[token]
@@ -75,7 +83,7 @@ def find_kyber_bid_ask(token, token2):
         print(e)
 
 for token in token_list:
-    [find_kyber_bid_ask(token, token2) for token2 in token_list if token != token2]
+    #[find_kyber_bid_ask(token, token2) for token2 in token_list if token != token2]
     [find_uniswap_bid_ask(token, token2) for token2 in token_list if token != token2]
 
 
