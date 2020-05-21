@@ -18,6 +18,42 @@ interface SimpleNetworkInterface { //Kyber on Ropsten 0x818E6FECD516Ecc3849DAf68
     function swapTokenToEther(ERC20 token, uint srcAmount, uint minConversionRate) external returns(uint);
 }
 
+interface UniswapFactoryInterface {
+    function getExchange(address token) external view returns (address exchange);
+    function getToken(address exchange) external view returns (address token);
+    function getTokenWithId(uint256 tokenId) external view returns (address token);
+}
+interface UniswapExchangeInterface {
+    // Address of ERC20 token sold on this exchange
+    function tokenAddress() external view returns (address token);
+    // Address of Uniswap Factory
+    function factoryAddress() external view returns (address factory);
+    // Get Prices
+    function getEthToTokenInputPrice(uint256 eth_sold) external view returns (uint256 tokens_bought);
+    function getEthToTokenOutputPrice(uint256 tokens_bought) external view returns (uint256 eth_sold);
+    function getTokenToEthInputPrice(uint256 tokens_sold) external view returns (uint256 eth_bought);
+    function getTokenToEthOutputPrice(uint256 eth_bought) external view returns (uint256 tokens_sold);
+    // Trade ETH to ERC20
+    function ethToTokenSwapInput(uint256 min_tokens, uint256 deadline) external payable returns (uint256  tokens_bought);
+    function ethToTokenTransferInput(uint256 min_tokens, uint256 deadline, address recipient) external payable returns (uint256  tokens_bought);
+    function ethToTokenSwapOutput(uint256 tokens_bought, uint256 deadline) external payable returns (uint256  eth_sold);
+    function ethToTokenTransferOutput(uint256 tokens_bought, uint256 deadline, address recipient) external payable returns (uint256  eth_sold);
+    // Trade ERC20 to ETH
+    function tokenToEthSwapInput(uint256 tokens_sold, uint256 min_eth, uint256 deadline) external returns (uint256  eth_bought);
+    function tokenToEthTransferInput(uint256 tokens_sold, uint256 min_eth, uint256 deadline, address recipient) external returns (uint256  eth_bought);
+    function tokenToEthSwapOutput(uint256 eth_bought, uint256 max_tokens, uint256 deadline) external returns (uint256  tokens_sold);
+    function tokenToEthTransferOutput(uint256 eth_bought, uint256 max_tokens, uint256 deadline, address recipient) external returns (uint256  tokens_sold);
+    // Trade ERC20 to ERC20
+    function tokenToTokenSwapInput(uint256 tokens_sold, uint256 min_tokens_bought, uint256 min_eth_bought, uint256 deadline, address token_addr) external returns (uint256  tokens_bought);
+    function tokenToTokenTransferInput(uint256 tokens_sold, uint256 min_tokens_bought, uint256 min_eth_bought, uint256 deadline, address recipient, address token_addr) external returns (uint256  tokens_bought);
+    function tokenToTokenSwapOutput(uint256 tokens_bought, uint256 max_tokens_sold, uint256 max_eth_sold, uint256 deadline, address token_addr) external returns (uint256  tokens_sold);
+    function tokenToTokenTransferOutput(uint256 tokens_bought, uint256 max_tokens_sold, uint256 max_eth_sold, uint256 deadline, address recipient, address token_addr) external returns (uint256  tokens_sold);
+    // Trade ERC20 to Custom Pool
+    function tokenToExchangeSwapInput(uint256 tokens_sold, uint256 min_tokens_bought, uint256 min_eth_bought, uint256 deadline, address exchange_addr) external returns (uint256  tokens_bought);
+    function tokenToExchangeTransferInput(uint256 tokens_sold, uint256 min_tokens_bought, uint256 min_eth_bought, uint256 deadline, address recipient, address exchange_addr) external returns (uint256  tokens_bought);
+    function tokenToExchangeSwapOutput(uint256 tokens_bought, uint256 max_tokens_sold, uint256 max_eth_sold, uint256 deadline, address exchange_addr) external returns (uint256  tokens_sold);
+    function tokenToExchangeTransferOutput(uint256 tokens_bought, uint256 max_tokens_sold, uint256 max_eth_sold, uint256 deadline, address recipient, address exchange_addr) external returns (uint256  tokens_sold);
+}
 interface IUniswapV2Router01 { //Uniswap V2 on Ropsten 0xf164fC0Ec4E93095b804a4795bBe1e041497b92a
     function swapExactTokensForTokens(uint amountIn,uint amountOutMin,address[] calldata path,address to,uint deadline) external returns (uint[] memory amounts);
     function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts);
@@ -81,7 +117,8 @@ contract flashTurnaround {
         for (uint i=0; i<tokenPath.length-1; i++) {
             address fromAddr=tokenPath[i]; targetAddr=tokenPath[i+1];
             if (hashi(exchangePath[i])==hashi("kyberswap")) tradeAmount = kyberSwap(fromAddr, targetAddr, tradeAmount);
-            //if (hashi(exchangePath[i])==hashi("uniswap")) tradeAmount = uniswapV2(fromAddr, targetAddr, tradeAmount);
+            if (hashi(exchangePath[i])==hashi("uniswapv1")) tradeAmount = uniswapv1(fromAddr, targetAddr, tradeAmount);
+            if (hashi(exchangePath[i])==hashi("uniswapv2")) tradeAmount = uniswapv2(fromAddr, targetAddr, tradeAmount);
         }
 
         // Return remaining Tokens to sender
@@ -102,11 +139,37 @@ contract flashTurnaround {
             return k.swapEtherToToken{value:amount}(ERC20(targetAddr), 0);
     }
 
+     function uniswapv1(address fromAddr, address targetAddr, uint amount) public payable returns (uint exchangedAmount) {
+        address uniswapSC=0x9c83dCE8CA20E9aAF9D3efc003b2ea62aBC08351; // Factory address - Mainnet: 0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95
+        address x=UniswapFactoryInterface(uniswapSC).getExchange(fromAddr);
+        UniswapExchangeInterface trade = UniswapExchangeInterface(x);
+        if(fromAddr!=ETH) {
+            ERC20(fromAddr).approve(uniswapSC, amount);
+            if(targetAddr!=ETH)
+                return trade.tokenToTokenSwapInput(amount, 0, 0, now+120, targetAddr);
+            else
+                return trade.tokenToEthSwapInput(amount, 0, now+120); // min eth = 0
+        } else
+            return trade.ethToTokenSwapInput{value:amount}(0, now+120); //min tokens = 0
+    }
+
     function uniswapV2(ERC20 fromToken, ERC20 targetToken, uint amount) private returns (uint exchangedAmount) {
-    //    address uniswapSC=0xf164fC0Ec4E93095b804a4795bBe1e041497b92a;
+        address uniswapSC=0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f; // Factory address - same on Mainnet: 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
+        IUniswapV2Router01 u=IUniswapV2Router01(uniswapSC);
+        //if(fromAddr!=ETH) {
+        //   ERC20(fromAddr).approve(uniswapSC, amount);
+        //    if(targetAddr!=ETH)
+        //        return k.swapTokenToToken(ERC20(fromAddr), amount, ERC20(targetAddr), 0);
+        //    else
+        //        return k.swapTokenToEther(ERC20(fromAddr), amount, 0);
+        //} else
+        //    return u.swapExactETHForTokens(0, [targetAddr], address(this), now){value:amount}(ERC20(targetAddr), 0);
+
+        
     //    IUniswapV2Router01 u = IUniswapV2Router01(uniswapSC);
     //    fromToken.approve(uniswapSC, amount);
     //    return u.swapExactTokensForTokens(amount,0,[address(this),address(this),address(this)],address(this),0)[1];
+        return 0;
     }
 
     function hashi(string memory text) private pure returns (bytes32 hash) {
