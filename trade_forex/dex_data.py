@@ -13,8 +13,14 @@ addresses = {
             'TUSD': '0x8dd5fbce2f6a956c3022ba3663759011dd51e73e',
             'USDT': '0xdac17f958d2ee523a2206206994597c13d831ec7',
             'SAI': '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359',
-            'ETH': '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
-        }
+            'ETH': '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+            'USDC': '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+            'OMG': '0xd26114cd6EE289AccF82350c8d8487fedB8A0C07',
+            'WBTC': '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+            'LINK': '0x514910771af9ca656af840dff83e8264ecf986ca',
+            'ZRX': '0xe41d2489571d322189246dafa5ebde1f4699f498',
+            'KNC': '0xdd974d5c2e2928dea5f71b9825b8b646686bd200'
+}
 
 uniswap_addresses = {
             'DAI': 'ETH_0x97deC872013f6B5fB443861090ad931542878126',
@@ -41,7 +47,7 @@ trade_path_2 = 'ETH'
 #buying = ask price
 #selling = bid price
 def find_uniswap_bid_ask(token, token2):
-    if token == 'SAI' or token2 == 'SAI' or token == 'USDT' or token2 == 'USDT':
+    if token == 'SAI' or token2 == 'SAI' or token == 'USDT' or token2 == 'USDT' or token == 'OMG' or token2 == 'OMG':
         return
 
     dex_ = 'uniswap'
@@ -55,7 +61,6 @@ def find_uniswap_bid_ask(token, token2):
         f'https://api-v2.dex.ag/price?from={token2}&to={token}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
 
         uniswap_bid_float = uniswap_sell_side.get('price')
-
         uniswap_ask_float = uniswap_buy_side.get('price')
         print(f'{token}->{token2}: Buy {uniswap_ask_float}, Sell {uniswap_bid_float}')
         redis_client.set(f'uniswap, {token}, {token2}', f'{uniswap_bid_float}, {uniswap_ask_float}')
@@ -73,8 +78,8 @@ def find_kyber_bid_ask(token, token2):
     try:
         buy_side = requests.get(f'https://api.kyber.network/quote_amount?base={token_1_address}&quote={token_2_address}&base_amount={1}&type=buy').json()
         sell_side = requests.get(f'https://api.kyber.network/quote_amount?base={token_1_address}&quote={token_2_address}&base_amount={1}&type=sell').json()
-        if buy_side['error'] == True or sell_side['error'] == True:
-            raise
+        #if buy_side['error'] == True or sell_side['error'] == True:
+         #   raise
         print(f'{token}->{token2}: Buy {buy_side}, Sell {sell_side}')
         bid_float = sell_side['data']
         ask_float = buy_side['data']
@@ -83,7 +88,7 @@ def find_kyber_bid_ask(token, token2):
         print(e)
 
 for token in token_list:
-    #[find_kyber_bid_ask(token, token2) for token2 in token_list if token != token2]
+    [find_kyber_bid_ask(token, token2) for token2 in token_list if token != token2]
     [find_uniswap_bid_ask(token, token2) for token2 in token_list if token != token2]
 
 
