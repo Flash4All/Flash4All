@@ -67,6 +67,7 @@ interface IUniswapV2Factory {
   function createPair(address tokenA, address tokenB) external returns (address pair);
 }
 interface IUniswapV2Router01 { //Uniswap V2 on Ropsten 0xf164fC0Ec4E93095b804a4795bBe1e041497b92a
+    function WETH() external pure returns (address);
     function swapExactTokensForTokens(uint amountIn,uint amountOutMin,address[] calldata path,address to,uint deadline) external returns (uint[] memory amounts);
     function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts);
     function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts);
@@ -81,7 +82,6 @@ interface aaveLinks {
 contract flashTurnaround {
 
     address ETH=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address WETH=0xc778417E063141139Fce010982780140Aa0cD5Ab;
     address aaveAddr=0x1c8756FD2B28e9426CDBDcC7E3c4d64fa9A54728; // get addresses from Aave Addresses Provider
 
     fallback() external payable {}
@@ -152,7 +152,7 @@ contract flashTurnaround {
             return k.swapEtherToToken{value:amount}(ERC20(targetAddr), 0);
     }
 
-     function uniswapv1(address fromAddr, address targetAddr, uint amount) public payable returns (uint exchangedAmount) {
+    function uniswapv1(address fromAddr, address targetAddr, uint amount) public payable returns (uint exchangedAmount) {
         address uniswapSC=0x9c83dCE8CA20E9aAF9D3efc003b2ea62aBC08351; // Factory address - Mainnet: 0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95
         address x=UniswapFactoryInterface(uniswapSC).getExchange(fromAddr);
         UniswapExchangeInterface trade = UniswapExchangeInterface(x);
@@ -167,17 +167,15 @@ contract flashTurnaround {
     }
 
     function addr(address a1, address a2) private pure returns (address[] memory) {
-        address[] memory addressList;
-        addressList[0]=a1;
-        addressList[1]=a2;
-        return addressList;
+        address[] memory a = new address[](2); a[0]=a1; a[1]=a2;
+        return a;
     }
-  
     function uniswapv2(address fromAddr, address targetAddr, uint amount) public payable returns (uint exchangedAmount) {
         //address uniswapSC=0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f; // Factory address - same on Mainnet: 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
         //address uniPair=IUniswapV2Factory(uniswapSC).getPair(fromAddr, targetAddr);
         address v2router=0xf164fC0Ec4E93095b804a4795bBe1e041497b92a;
         IUniswapV2Router01 u=IUniswapV2Router01(v2router);
+        address WETH=u.WETH();
         if(fromAddr!=ETH) {
             ERC20(fromAddr).approve(v2router, amount);
             if(targetAddr!=ETH)
