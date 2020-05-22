@@ -153,17 +153,20 @@ contract flashTurnaround {
     }
 
     function uniswapv1(address fromAddr, address targetAddr, uint amount) public payable returns (uint exchangedAmount) {
-        address uniswapSC=0x9c83dCE8CA20E9aAF9D3efc003b2ea62aBC08351; // Factory address - Mainnet: 0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95
-        address x=UniswapFactoryInterface(uniswapSC).getExchange(fromAddr);
-        UniswapExchangeInterface trade = UniswapExchangeInterface(x);
+        UniswapFactoryInterface Factory=UniswapFactoryInterface(0x9c83dCE8CA20E9aAF9D3efc003b2ea62aBC08351); // Factory address - Mainnet: 0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95        
         if(fromAddr!=ETH) {
-            ERC20(fromAddr).approve(uniswapSC, amount);
+            address exchange=Factory.getExchange(fromAddr);
+            ERC20(fromAddr).approve(exchange, amount);
+            UniswapExchangeInterface trade=UniswapExchangeInterface(exchange);
             if(targetAddr!=ETH)
-                return trade.tokenToTokenSwapInput(amount, 0, 0, now+120, targetAddr);
+                return trade.tokenToTokenSwapInput(amount, 1, 0, now+120, targetAddr);
             else
-                return trade.tokenToEthSwapInput(amount, 0, now+120); // min eth = 0
-        } else
-            return trade.ethToTokenSwapInput{value:amount}(0, now+120); //min tokens = 0
+                return trade.tokenToEthSwapInput(amount, 1, now+120); // min eth = 0
+        } else {
+            address exchange=Factory.getExchange(targetAddr);
+            UniswapExchangeInterface trade=UniswapExchangeInterface(exchange);
+            return trade.ethToTokenSwapInput{value:amount}(1, now+120); //min tokens = 0
+        }
     }
 
     function addr(address a1, address a2) private pure returns (address[] memory) {
