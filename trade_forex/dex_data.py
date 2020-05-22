@@ -61,9 +61,9 @@ def find_uniswap_bid_ask(token, token2):
         f'https://api-v2.dex.ag/price?from={token2}&to={token}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
 
         uniswap_bid_float = uniswap_sell_side.get('price')
-        uniswap_ask_float = uniswap_buy_side.get('price')
+        uniswap_ask_float = (1 / Decimal(uniswap_buy_side.get('price')))
         print(f'{token}->{token2}: Buy {uniswap_ask_float}, Sell {uniswap_bid_float}')
-        redis_client.set(f'uniswap, {token}, {token2}', f'{uniswap_bid_float}, {uniswap_ask_float}')
+        redis_client.set(f'uniswap,{token},{token2}', f'{uniswap_bid_float}, {uniswap_ask_float}')
     except Exception as e:
         print(token, token2)
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -76,8 +76,8 @@ def find_kyber_bid_ask(token, token2):
     token_1_address = addresses[token]
     token_2_address = addresses[token2]
     try:
-        buy_side = requests.get(f'https://api.kyber.network/quote_amount?base={token_1_address}&quote={token_2_address}&base_amount={1}&type=buy').json()
-        sell_side = requests.get(f'https://api.kyber.network/quote_amount?base={token_1_address}&quote={token_2_address}&base_amount={1}&type=sell').json()
+        buy_side = requests.get(f'https://api.kyber.network/quote_amount?base={token_1_address}&quote={token_2_address}&base_amount={10}&type=buy').json()
+        sell_side = requests.get(f'https://api.kyber.network/quote_amount?base={token_1_address}&quote={token_2_address}&base_amount={10}&type=sell').json()
         #if buy_side['error'] == True or sell_side['error'] == True:
          #   raise
         print(f'{token}->{token2}: Buy {buy_side}, Sell {sell_side}')
