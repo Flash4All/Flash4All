@@ -14,6 +14,7 @@ class Home extends Component {
     super(props);
     this.state = {
       flashEthAmount: 0,
+      triArbKyberAmount: {}
     }
   }
 
@@ -79,82 +80,65 @@ class Home extends Component {
       window.web3 = web3;
     }
 
-    console.log(window.web3);
-
     this.props.fetchTokens();
     this.props.arbitrage('ETH');
   }
 
-   render() {
-     let { tokens, trades } = this.props.token;
-     return (
-     <section>
-       <p>Available Flash-Mates (click to activate)</p>
-       <button style={workingPart}>DAI</button>
-       {tokens.map((token) => (<button onClick={this.getArbitrage.bind(null, token)}> {token}</button>))}
-       <br/>
-       <br/>
-       <br/>
-       <center>
-       <table>
-<tbody>
-<tr>
-<td>
-  
-  </td>
-  </tr>
-</tbody>
-</table>
-<hr/>
-<table>
-<tbody>
-<tr>
-<td><b>Trading Opportunities</b></td>
-<td><b>Choose your volume</b></td>
-</tr>
-<tr>
-<td><gain>2.1% </gain> DAI > MKR > ETH</td>
-<td>
-  <p>
-    0$<input type="range" value="90" onChange={(e) => this.setState({triArbKyberAmount: e.target.value})} />100$ <button type="button" onClick={this.triArbKyber}>Execute trade</button>
-    <table><tr>40 DAI from wallet</tr><tr>50 DAI in Flash Loan</tr></table>
-  </p>
-</td>
-</tr>
-<tr>
-<td><gain>1.8%</gain> DAI > TRX > USDC</td>
-<td>
-  <p>
-  0$<input type="range" value="55" />100$ <button type="button" >Execute trade</button>  
-  <table><tr>40 DAI from wallet</tr><tr>15 DAI in Flash Loan</tr></table>
-  </p>
-</td>
-</tr>
-<tr>
-<td><gain>0.6</gain> DAI > LEND > ETH</td>
-<td>
-  <p>
-  0$<input type="range" value="40" />100$ <button type="button" >Execute trade</button>
-  <table><tr>40 DAI from wallet</tr><tr>no Flash Loan</tr></table>
-  </p>
-</td>
-</tr>
-</tbody>
-</table>
-</center>
-       <hr />
-       <hr />
-       <div class="input-group i-1">
-         <input type="text" onChange={(e) => this.setState({flashEthAmount: e.target.value})} class="form-control" id="input1" placeholder="Amount of ETH" />
-         <button onClick={this.flashEth} type="button" id="data_button1" class="btn btn-primary">Log account address</button>
-       </div>
-       <div class="input-group i-3" style={workingPart}>
-       <input type="text" onChange={(e) => this.setState({triArbKyberAmount: e.target.value})} class="form-control" id="input3" placeholder="Amount of DAI" />
-         <button onClick={this.triArbKyber} type="button" id="data_button3" class="btn btn-primary">Flash DAI > KNC > EOS (via Kyber)</button>
-       </div>
-     </section>
-     )
-   }
+  render() {
+    let { tokens, trades } = this.props.token;
+    return (
+      <section>
+        <p>Available Flash-Mates (click to activate)</p>
+        <button style={workingPart}>DAI</button>
+        {tokens.map((token) => (<button onClick={this.getArbitrage.bind(null, token)}> {token}</button>))}
+        <br/>
+        <br/>
+        <br/>
+        <center>
+          <table>
+            <tbody>
+              <tr>
+                <td>
+
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <hr/>
+          <table>
+            <tbody>
+              <tr>
+                <td><b>Trading Opportunities</b></td>
+                <td><b>Choose your volume</b></td>
+              </tr>
+              {trades && trades.map((trade, i) => {
+              let t = trade[0].split(',');
+              return (<tr>
+                <td><gain>{trade[1].toString().substr(0, 7)}% </gain> {t[0]} - {t[3]} > {t[1]} - {t[4]} > {t[2]} {t[5]}</td>
+                <td>
+                  <p>
+                    0$<input type="range" value={this.state.triArbKyberAmount[i]} onChange={(e) => this.setState({triArbKyberAmount: {i: e.target.value}})} />100$ <button type="button" onClick={this.triArbKyber}>Execute trade</button>
+                    <table><tr>40 {t[3]} from wallet</tr><tr>50 {t[3]} in Flash Loan</tr></table>
+                  </p>
+                </td>
+              </tr>)
+              })}
+            </tbody>
+          </table>
+        </center>
+        <hr />
+        <hr />
+        <div class="input-group i-1">
+          <input type="text" onChange={(e) => this.setState({flashEthAmount: e.target.value})} class="form-control" id="input1" placeholder="Amount of ETH" />
+          <button onClick={this.flashEth} type="button" id="data_button1" class="btn btn-primary">Log account address</button>
+        </div>
+        <div class="input-group i-3" style={workingPart}>
+          <input type="text" onChange={(e) => this.setState({triArbKyberAmount: e.target.value})} class="form-control" id="input3" placeholder="Amount of DAI" />
+          <button onClick={this.triArbKyber} type="button" id="data_button3" class="btn btn-primary">Flash DAI > KNC > EOS (via Kyber)</button>
+        </div>
+      </section>
+    )
+  }
 }
 
 const mapStateToProps = state => ({
