@@ -135,7 +135,6 @@ contract flashTurnaround {
         }
 
         // Return remaining Tokens to sender
-        if(tradeAmount>injectedAmount) tradeAmount=injectedAmount; // if flash loan used, reduce amount to be able to pay it back
         if(targetAddr!=ETH) ERC20(targetAddr).transfer(msg.sender, tradeAmount-fee);
         else msg.sender.transfer(tradeAmount-fee);
     }
