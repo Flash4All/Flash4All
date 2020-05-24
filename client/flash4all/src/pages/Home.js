@@ -38,18 +38,19 @@ class Home extends Component {
     
     window.ethereum.enable().then((accounts) => {
       console.log(accounts[0]);
-      var contractABI=[{"inputs":[],"stateMutability":"payable","type":"constructor"},{"stateMutability":"payable","type":"fallback"},{"inputs":[{"internalType":"address","name":"_reserve","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"uint256","name":"_fee","type":"uint256"},{"internalType":"bytes","name":"_params","type":"bytes"}],"name":"executeOperation","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"giveMeEth","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"fromAddr","type":"address"},{"internalType":"address","name":"targetAddr","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"kyberSwap","outputs":[{"internalType":"uint256","name":"exchangedAmount","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address[]","name":"tokenPath","type":"address[]"},{"internalType":"string[]","name":"exchangePath","type":"string[]"},{"internalType":"uint256","name":"injectedAmount","type":"uint256"},{"internalType":"uint256","name":"tradeAmount","type":"uint256"}],"name":"turnaround","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"fromAddr","type":"address"},{"internalType":"address","name":"targetAddr","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"uniswapv1","outputs":[{"internalType":"uint256","name":"exchangedAmount","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
-      var contractAddress="0x9c8039Db04e769c42C773e8843DF7103d120F7De";
+      var contractABI=[{"inputs":[],"stateMutability":"payable","type":"constructor"},{"stateMutability":"payable","type":"fallback"},{"inputs":[{"internalType":"address","name":"_reserve","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"uint256","name":"_fee","type":"uint256"},{"internalType":"bytes","name":"_params","type":"bytes"}],"name":"executeOperation","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"giveMeEth","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"fromAddr","type":"address"},{"internalType":"address","name":"targetAddr","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"kyberSwap","outputs":[{"internalType":"uint256","name":"exchangedAmount","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address[]","name":"tokenPath","type":"address[]"},{"internalType":"string[]","name":"exchangePath","type":"string[]"},{"internalType":"uint256","name":"injectedAmount","type":"uint256"},{"internalType":"uint256","name":"tradeAmount","type":"uint256"}],"name":"turnaround","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"fromAddr","type":"address"},{"internalType":"address","name":"targetAddr","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"uniswapv1","outputs":[{"internalType":"uint256","name":"exchangedAmount","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"fromAddr","type":"address"},{"internalType":"address","name":"targetAddr","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"uniswapv2","outputs":[{"internalType":"uint256","name":"exchangedAmount","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
+      var contractAddress="0x946B9687e5dda4a30daC3d66fc00C79572c9bccF";
       var web3 = new Web3(Web3.givenProvider);
 
       // Various addresses for sample transaction on Ropsten testnet
       // DAI on Ropsten Oasis 0x31f42841c2db5173425b5223809cf3a38fede360
-      // DAI on Ropsten Kyber 0xad6d458402f60fd3bd25163575031acdce07538d
+      // DAI on Ropsten Kyber/Uniswap 0xad6d458402f60fd3bd25163575031acdce07538d
       // DAI on Ropsten AAve  0xf80a32a835f79d7787e8a8ee5721d0feafd78108 or 0xb5e5d0f8c0cba267cd3d7035d6adc8eba7df7cdd
-      var DAI="0xad6d458402f60fd3bd25163575031acdce07538d";
-      var KNC="0x7b2810576aa1cce68f2b118cef1f36467c648f92";
+      var DAI="0xaD6D458402F60fD3Bd25163575031ACDce07538D"; // mainnet: 0x6B175474E89094C44Da98b954EedeAC495271d0F
+      var KNC="0x7B2810576aa1cce68F2B118CeF1F36467c648F92";
+      var LINK="0x20fE562d797A42Dcb3399062AE9546cd06f63280";
       var EOS="0xd5b4218b950a53ff07985e2d88346925c335eae7";
-      var WETH="0xc778417e063141139fce010982780140aa0cd5ab";
+      var WETH="0xc778417E063141139Fce010982780140Aa0cD5Ab";
       var ETH="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
       var tokenABI=[{"constant": false,"inputs": [{"name": "_spender", "type": "address"}, {"name": "_value","type": "uint256"}],"name": "approve","outputs": [{"name": "","type": "bool"}],"payable": false,"stateMutability": "nonpayable","type": "function"}];
       var web3Infura = new Web3(Web3.givenProvider || "https://ropsten.infura.io/v3/"); // Infura-ID to be provided
@@ -60,7 +61,11 @@ class Home extends Component {
 
       // Exchange parameters - to be adjusted as required
       var tokenPath=[DAI,EOS,ETH];
-      var exchangePath=["kyberswap","kyberswap"];
+      var exchangePath=["kyberswap","kyberswap"]; // possible: "kyberswap", "uniswapv1", "uniswapv2"
+      // Alternative Test Scenarios:
+      // var tokenPath=[DAI,KNC,LINK,ETH,DAI];
+      // var exchangePath=["uniswapv1","kyberswap","uniswapv1","uniswapv2"];
+      // as Aave has different addresses on Ropsten, only possible to test DAI flahsloan without swapping 
       var initialAmount='800000000000000000'; // from the user's wallet
       var totalAmount='800000000000000000'; // if totel amount is higher, flashloan will be used
 
