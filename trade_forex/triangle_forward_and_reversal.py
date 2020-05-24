@@ -16,21 +16,27 @@ MARKETS=["uniswap", "kyber"]
 
 # forward Triangle = Bid_Pair 1 * (1/ASK_Pair2) * (1/ASK_Pair3)
 
-def calculate_forward(token1, token2, token3):
+def calculate_forward(token1, token2, token3=None):
    results = []
    trade_1 = None
    trade_2 = None
    trade_3 = None
    for first_trade_market in MARKETS:
+       trade_1 = redis_client.get(f'{first_trade_market},{token1},{token2}').decode().split(',')
        for second_trade_market in MARKETS:
+           if token3 is None: 
+               trade_2 = redis_client.get(f'{second_trade_market},{token2},{token1}').decode().split(',')
+               forward_calculation = ((Decimal(trade_1[0])) * (1 / Decimal(trade_2[1])) ) - 1
+               forward_calculation_percent = forward_calculation * 100
+               results.append((f'{first_trade_market},{second_trade_market},{token1},{token2}', forward_calculation_percent))
            for third_trade_market in MARKETS:
                try:
-                   trade_1 = redis_client.get(f'{first_trade_market},{token1},{token2}').decode().split(',')
-                   trade_2 = redis_client.get(f'{second_trade_market},{token3},{token2}').decode().split(',')
-                   trade_3 = redis_client.get(f'{third_trade_market},{token1},{token3}').decode().split(',')
-                   forward_calculation = ((Decimal(trade_1[0])) * (1 / Decimal(trade_2[1])) * (1 / Decimal(trade_3[1]))) - 1
-                   forward_calculation_percent = forward_calculation * 100
-                   results.append((f'{first_trade_market},{second_trade_market},{third_trade_market},{token1},{token2},{token3}', forward_calculation_percent))
+                   if token3 is not None:
+                       trade_2 = redis_client.get(f'{second_trade_market},{token3},{token2}').decode().split(',')
+                       trade_3 = redis_client.get(f'{third_trade_market},{token1},{token3}').decode().split(',')
+                       forward_calculation = ((Decimal(trade_1[0])) * (1 / Decimal(trade_2[1])) * (1 / Decimal(trade_3[1]))) - 1
+                       forward_calculation_percent = forward_calculation * 100
+                       results.append((f'{first_trade_market},{second_trade_market},{third_trade_market},{token1},{token2},{token3}', forward_calculation_percent))
                except Exception as e:
                    print(first_trade_market, second_trade_market, third_trade_market)
                    print(f'TOKENS: {token1}, {token2}, {token3}')
@@ -64,6 +70,7 @@ arbitriage_opps = []
 
 for token2 in token_list:
    if token2 != token1:
+       arbitriage_opps = arbitriage_opps + calculate_forward(token1, token2)
        for token3 in token_list:
            if token3 != token1 and token3 != token2:
                arbitriage_opps = arbitriage_opps + calculate_forward(token1, token2, token3)
