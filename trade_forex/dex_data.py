@@ -34,14 +34,16 @@ def find_uniswap_bid_ask(token, token2):
         return
 
     dex_ = 'uniswap'
+    dex_2 = 'kyber'
     initial_amount = 5
     try:
     #bid price = sell price
     # buy side = ask price should be lower
         uniswap_sell_side = requests.get(
         f'https://api-v2.dex.ag/price?from={token}&to={token2}&fromAmount={initial_amount}&dex={dex_}&limitAmount=').json()
+        uniswap_token_2_total = Decimal(uniswap_starting.get('price')) * initial_amount_uniswap
         uniswap_buy_side = requests.get(
-        f'https://api-v2.dex.ag/price?from={token2}&to={token}&toAmount={initial_amount}&dex={dex_}&limitAmount=').json()
+        f'https://api-v2.dex.ag/price?from={token2}&to={token}&fromAmount={uniswap_token_2_total}&dex={dex_2}&limitAmount=').json()
 
         uniswap_bid_float = uniswap_sell_side.get('price')
         uniswap_ask_float = Decimal(uniswap_buy_side.get('price'))
@@ -64,8 +66,9 @@ def find_kyber_bid_ask(token, token2):
     try:
         kyber_sell_side = requests.get(
             f'https://api-v2.dex.ag/price?from={token}&to={token2}&fromAmount={initial_amount}&dex={dex_}').json()
+        kyber_token_2_total = Decimal(kyber_sell_side.get('price')) * initial_amount
         kyber_buy_side = requests.get(
-            f'https://api-v2.dex.ag/price?from={token2}&to={token}&toAmount={initial_amount}&dex={dex_}').json()
+            f'https://api-v2.dex.ag/price?from={token2}&to={token}&toAmount={kyber_token_2_total}&dex={dex_}').json()
 
         kyber_bid_float = kyber_sell_side.get('price')
         kyber_ask_float = kyber_buy_side.get('price')

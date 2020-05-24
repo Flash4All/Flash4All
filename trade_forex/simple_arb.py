@@ -3,6 +3,7 @@ import os
 import sys
 
 from decimal import Decimal
+from redis_client import redis_client
 
 tokenlist = {
     'MKR',
@@ -41,10 +42,11 @@ def uniswap_to_kyber(token1, token2):
     token_1_end_total = Decimal(kyber_end.get('price')) * uniswap_token_2_total
     print (token_1_end_total)
     profit = initial_amount_uniswap - token_1_end_total
+    potential_profit = token_1_end_total / initial_amount_uniswap - 1
     if token_1_end_total > initial_amount_uniswap:
-        return f' {profit}'
+        return f' You will receive {profit} of {token1}'
     else:
-        return f'not profitable Uniswap<>Kyber'
+        return f'Uniswap<>Kyber is not profitable. {potential_profit}'
 
 def kyber_to_uniswap(token1, token2):
     kyber_starting = requests.get(
@@ -55,11 +57,12 @@ def kyber_to_uniswap(token1, token2):
         f'https://api-v2.dex.ag/price?from={token2}&to={token1}&fromAmount={kyber_token_2_total}&dex={dex_uniswap}').json()
     token_1_end_total = Decimal(uniswap_end.get('price')) * kyber_token_2_total
     print(token_1_end_total)
-    profit = initial_amount_kyber - token_1_end_total
+    profit = token_1_end_total - initial_amount_kyber
+    potential_profit = token_1_end_total/initial_amount_kyber - 1
     if token_1_end_total > initial_amount_kyber:
-        return f' {profit}'
+        return f' You will receive {profit} of {token1}'
     else:
-        return f'not profitable Kyber<>Uniswap'
+        return f'not profitable Kyber<>Uniswap. {potential_profit}'
 
 
 
