@@ -38,7 +38,7 @@ def find_uniswap_bid_ask(token, token2):
        return
 
    dex_ = 'uniswap'
-   initial_amount = Decimal(100)
+   initial_amount = Decimal(10)
 
    try:
    #bid price = sell price
@@ -67,7 +67,7 @@ def find_kyber_bid_ask(token, token2):
        return
 
    dex_2 = "kyber"
-   initial_amount: int = 100
+   initial_amount: int = 10
    try:
        kyber_sell_side = requests.get(
            f'https://api-v2.dex.ag/price?from={token}&to={token2}&fromAmount={initial_amount}&dex={dex_2}&limitAmount=').json()
