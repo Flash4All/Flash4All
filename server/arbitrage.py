@@ -13,13 +13,12 @@ MARKETS=["uniswap", "kyber"]
 def arbitrage_index():
     data = request.json
     token1 = data['token']
-    arbitriage_opps = []
 
     for token2 in token_list:
         if token2 != token1:
             for token3 in token_list:
                 if token3 != token1 and token3 != token2:
-                    arbitriage_opps.append(calculate_forward(token1, token2, token3))
+                    arbitriage_opps = calculate_forward(token1, token2, token3)
                     # arbitriage_opps.append(calculate_reversal(token1, token2, token3))
     arbitriage_opps.sort(reverse=True, key = get_tuple_calcutions)
     return jsonify(result=arbitriage_opps[:5])
